@@ -34,6 +34,11 @@ class DittoModel(nn.Module):
         # linear layer
         hidden_size = self.bert.config.hidden_size
         self.fc = torch.nn.Linear(hidden_size, 2)
+        self.self_supervised_fc = nn.Sequential(
+            torch.nn.Linear(hidden_size, hidden_size//2),
+            nn.PReLU(),
+            torch.nn.Linear(hidden_size//2, 6)
+        )
 
 
     def forward(self, x1, x2=None):
@@ -60,7 +65,10 @@ class DittoModel(nn.Module):
         else:
             enc = self.bert(x1)[0][:, 0, :]
 
-        return self.fc(enc) # .squeeze() # .sigmoid()
+        if x2 is not None:
+            return self.fc(enc), self.self_supervised_fc(enc2) # .squeeze() # .sigmoid()
+        else:
+            return self.fc(enc)
 
 
 def evaluate(model, iterator, threshold=None):
@@ -119,6 +127,7 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
         None
     """
     criterion = nn.CrossEntropyLoss()
+    SSL_criterion = nn.CrossEntropyLoss()
     # criterion = nn.MSELoss()
     for i, batch in enumerate(train_iter):
         optimizer.zero_grad()
@@ -127,10 +136,15 @@ def train_step(train_iter, model, optimizer, scheduler, hp):
             x, y = batch
             prediction = model(x)
         else:
-            x1, x2, y = batch
-            prediction = model(x1, x2)
+            x1, x2, y, SSL_label = batch
+            prediction, pred_SSL = model(x1, x2)
 
         loss = criterion(prediction, y.to(model.device))
+        # print(SSL_label)
+        if SSL_label is not None:
+            loss_SSL = SSL_criterion(pred_SSL, SSL_label.to(model.device))
+            loss = loss + loss_SSL
+
 
         if hp.fp16:
             with amp.scale_loss(loss, optimizer) as scaled_loss:
