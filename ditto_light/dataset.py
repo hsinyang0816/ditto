@@ -77,12 +77,16 @@ class DittoDataset(data.Dataset):
         # augment if da is set
         if self.da is not None:
             combined = self.augmenter.augment_sent(left + ' [SEP] ' + right, self.da)
-            left, right = combined.split(' [SEP] ')
+            left, right = combined[0].split(' [SEP] ')
             x_aug = self.tokenizer.encode(text=left,
                                       text_pair=right,
                                       max_length=self.max_len,
                                       truncation=True)
-            return x, x_aug, self.labels[idx]
+            if(self.da == 'drop_col'):
+              SSL_label = combined[2]
+            else:
+              SSL_label = combined[1]
+            return x, x_aug, self.labels[idx], SSL_label 
         else:
             return x, self.labels[idx]
 
@@ -99,15 +103,16 @@ class DittoDataset(data.Dataset):
                         Elements of x1 and x2 are padded to the same length
             LongTensor: a batch of labels, (batch_size,)
         """
-        if len(batch[0]) == 3:
-            x1, x2, y = zip(*batch)
+        if len(batch[0]) == 4:
+            x1, x2, y, SSL_label = zip(*batch)
 
             maxlen = max([len(x) for x in x1+x2])
             x1 = [xi + [0]*(maxlen - len(xi)) for xi in x1]
             x2 = [xi + [0]*(maxlen - len(xi)) for xi in x2]
             return torch.LongTensor(x1), \
                    torch.LongTensor(x2), \
-                   torch.LongTensor(y)
+                   torch.LongTensor(y), \
+                   torch.LongTensor(SSL_label)
         else:
             x12, y = zip(*batch)
             maxlen = max([len(x) for x in x12])
