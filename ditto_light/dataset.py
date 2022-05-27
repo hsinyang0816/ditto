@@ -77,6 +77,7 @@ class DittoDataset(data.Dataset):
         # augment if da is set
         if self.da is not None:
             combined = self.augmenter.augment_sent(left + ' [SEP] ' + right, self.da)
+            # print(combined[0])
             left, right = combined[0].split(' [SEP] ')
             x_aug = self.tokenizer.encode(text=left,
                                       text_pair=right,
@@ -85,7 +86,7 @@ class DittoDataset(data.Dataset):
             if(self.da == 'drop_col'):
               SSL_label = combined[2]
             else:
-              SSL_label = combined[1]
+              SSL_label = None
             return x, x_aug, self.labels[idx], SSL_label 
         else:
             return x, self.labels[idx]
@@ -109,10 +110,16 @@ class DittoDataset(data.Dataset):
             maxlen = max([len(x) for x in x1+x2])
             x1 = [xi + [0]*(maxlen - len(xi)) for xi in x1]
             x2 = [xi + [0]*(maxlen - len(xi)) for xi in x2]
-            return torch.LongTensor(x1), \
-                   torch.LongTensor(x2), \
-                   torch.LongTensor(y), \
-                   torch.LongTensor(SSL_label)
+            if SSL_label[0] is not None:
+                return torch.LongTensor(x1), \
+                      torch.LongTensor(x2), \
+                      torch.LongTensor(y), \
+                      torch.LongTensor(SSL_label)
+            else:
+                return torch.LongTensor(x1), \
+                      torch.LongTensor(x2), \
+                      torch.LongTensor(y), \
+                      None
         else:
             x12, y = zip(*batch)
             maxlen = max([len(x) for x in x12])
