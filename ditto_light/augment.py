@@ -31,7 +31,10 @@ class Augmenter(object):
         Returns:
             list of strings: the augmented tokens
             list of strings: the augmented labels
+
         """
+        drop_index = 0
+
         if 'del' in op:
             # insert padding to keep the length consistent
             # span_len = random.randint(1, 3)
@@ -179,6 +182,11 @@ class Augmenter(object):
                 start, end = col_starts[idx], col_ends[idx]
                 new_tokens = tokens[:start] + tokens[end+1:]
                 new_labels = labels[:start] + labels[end+1:]
+                drop_index = new_tokens[:start].count('COL')
+                # print(start, end)
+                # print(drop_index)
+                new_labels.append(drop_index)
+
             else:
                 new_tokens, new_labels = tokens, labels
         else:
@@ -201,7 +209,8 @@ class Augmenter(object):
             str: the augmented sentence
         """
         # 50% of chance of flipping
-        if ' [SEP] ' in text and random.randint(0, 1) == 0:
+        flipped = random.randint(0, 1)
+        if ' [SEP] ' in text and flipped == 0:
             left, right = text.split(' [SEP] ')
             text = right + ' [SEP] ' + left
 
@@ -228,7 +237,11 @@ class Augmenter(object):
         else:
             tokens, labels = self.augment(tokens, labels, op=op)
         results = ' '.join(tokens)
-        return results
+
+        if op == 'drop_col':
+          drop_index = labels[-1]
+          return results, flipped, drop_index
+        return results, flipped
 
     def sample_span(self, tokens, labels, span_len=3):
         candidates = []
@@ -251,7 +264,7 @@ class Augmenter(object):
 
 if __name__ == '__main__':
     ag = Augmenter()
-    text = 'COL content VAL vldb conference papers 2020-01-01 COL year VAL 2020 [SEP] COL content VAL sigmod conference 2010 papers 2019-12-31 COL year VAL 2019'
+    text = 'COL title VAL microsoft visio standard 2007 version upgrade COL manufacturer VAL microsoft COL price VAL 129.95 [SEP] COL title VAL adobe cs3 design standard upgrade COL manufacturer VAL  COL price VAL 413.99'
     for op in ['del',
                'drop_col',
                'append_col',
