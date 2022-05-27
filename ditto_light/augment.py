@@ -33,7 +33,7 @@ class Augmenter(object):
             list of strings: the augmented labels
 
         """
-        drop_index = 0
+        
 
         if 'del' in op:
             # insert padding to keep the length consistent
@@ -227,21 +227,29 @@ class Augmenter(object):
                 labels.append('<SEP>')
             else:
                 labels.append('O')
-
+        drop_index = None
+        
         if op == 'all':
             # RandAugment: https://arxiv.org/pdf/1909.13719.pdf
-            N = 3
+            N = 2
             ops = ['del', 'swap', 'drop_col', 'append_col']
             for op in random.choices(ops, k=N):
+                # print(op)
                 tokens, labels = self.augment(tokens, labels, op=op)
+                if op == 'drop_col':
+                  drop_index = labels[-1]
+                  labels = labels[:-1]
+                  
         else:
             tokens, labels = self.augment(tokens, labels, op=op)
         results = ' '.join(tokens)
-
+        
+        
         if op == 'drop_col':
           drop_index = labels[-1]
+          labels = labels[:-1]
           return results, flipped, drop_index
-        return results, flipped
+        return results, flipped, drop_index
 
     def sample_span(self, tokens, labels, span_len=3):
         candidates = []
