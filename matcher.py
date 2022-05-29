@@ -162,8 +162,8 @@ def predict(input_path, output_path, config,
                 output = {'left': row[0], 'right': row[1],
                     'match': pred,
                     'match_confidence': score[int(pred)],
-                    'right_id': row[3],
-                    'left_id': row[4]}
+                    'left_id': row[3],
+                    'fight_id': row[4]}
             writer.write(output)
 
     # input_path can also be train/valid/test.txt
