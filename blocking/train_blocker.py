@@ -71,7 +71,9 @@ def train(hp):
     dev_dataloader = DataLoader(dev_data,
                                 shuffle=False,
                                 batch_size=hp.batch_size)
-    evaluator = EmbeddingSimilarityEvaluator(dev_dataloader)
+  
+    
+    evaluator = EmbeddingSimilarityEvaluator.from_input_examples(reader.get_examples(hp.valid_fn))
 
     warmup_steps = math.ceil(len(train_dataloader) \
             * hp.n_epochs / hp.batch_size * 0.1) #10% of train data for warm-up
@@ -86,9 +88,7 @@ def train(hp):
           epochs=hp.n_epochs,
           evaluation_steps=1000,
           warmup_steps=warmup_steps,
-          output_path=hp.model_fn,
-          fp16=hp.fp16,
-          fp16_opt_level='O2')
+          output_path=hp.model_fn)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
