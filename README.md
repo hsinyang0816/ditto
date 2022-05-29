@@ -1,106 +1,125 @@
-# Ditto: Deep Entity Matching with Pre-Trained Language Models
+---
+pipeline_tag: sentence-similarity
+tags:
+- sentence-transformers
+- feature-extraction
+- sentence-similarity
+- transformers
+---
 
-*Update: a new light-weight version based on new versions of Transformers*
+# {MODEL_NAME}
 
-Ditto is an entity matching (EM) solution based on pre-trained language models such as BERT. Given a pair of data entries, EM checks if the two entries refer to the same real-world entities (products, businesses, publications, persons, etc.). Ditto leverages the powerful language understanding capability of pre-trained language models (LMs) via fine-tuning. Ditto serializes each data entry into a text sequence and casts EM as a sequence-pair classification problem solvable by LM fine-tuning. We also employ a set of novel optimizations including summarization, injecting domain-specific knowledge, and data augmentation to further boost the performance of the matching models.
+This is a [sentence-transformers](https://www.SBERT.net) model: It maps sentences & paragraphs to a 768 dimensional dense vector space and can be used for tasks like clustering or semantic search.
 
-For more technical details, see the [Deep Entity Matching with Pre-Trained Language Models](https://arxiv.org/abs/2004.00584) paper.
+<!--- Describe your model here -->
 
-## Requirements
+## Usage (Sentence-Transformers)
 
-* Python 3.7.7
-* PyTorch 1.9
-* HuggingFace Transformers 4.9.2
-* Spacy with the ``en_core_web_lg`` models
-* NVIDIA Apex (fp16 training)
+Using this model becomes easy when you have [sentence-transformers](https://www.SBERT.net) installed:
 
-Install required packages
 ```
-conda install -c conda-forge nvidia-apex
-pip install -r requirements.txt
-python -m spacy download en_core_web_lg
+pip install -U sentence-transformers
 ```
 
-## The EM pipeline
+Then you can use the model like this:
 
-A typical EM pipeline consists of two phases: blocking and matching. 
-![The EM pipeline of Ditto.](ditto.jpg)
-The blocking phase typically consists of simple heuristics that reduce the number of candidate pairs to perform the pairwise comparisons. Ditto optimizes the matching phase which performs the actual pairwise comparisons. The input to Ditto consists of a set of labeled candidate data entry pairs. Each data entry is pre-serialized into the following format:
+```python
+from sentence_transformers import SentenceTransformer
+sentences = ["This is an example sentence", "Each sentence is converted"]
+
+model = SentenceTransformer('{MODEL_NAME}')
+embeddings = model.encode(sentences)
+print(embeddings)
 ```
-COL title VAL microsoft visio standard 2007 version upgrade COL manufacturer VAL microsoft COL price VAL 129.95
+
+
+
+## Usage (HuggingFace Transformers)
+Without [sentence-transformers](https://www.SBERT.net), you can use the model like this: First, you pass your input through the transformer model, then you have to apply the right pooling-operation on-top of the contextualized word embeddings.
+
+```python
+from transformers import AutoTokenizer, AutoModel
+import torch
+
+
+#Mean Pooling - Take attention mask into account for correct averaging
+def mean_pooling(model_output, attention_mask):
+    token_embeddings = model_output[0] #First element of model_output contains all token embeddings
+    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
+
+# Sentences we want sentence embeddings for
+sentences = ['This is an example sentence', 'Each sentence is converted']
+
+# Load model from HuggingFace Hub
+tokenizer = AutoTokenizer.from_pretrained('{MODEL_NAME}')
+model = AutoModel.from_pretrained('{MODEL_NAME}')
+
+# Tokenize sentences
+encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors='pt')
+
+# Compute token embeddings
+with torch.no_grad():
+    model_output = model(**encoded_input)
+
+# Perform pooling. In this case, mean pooling.
+sentence_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
+
+print("Sentence embeddings:")
+print(sentence_embeddings)
 ```
-where ``COL`` and ``VAL`` are special tokens to indicate the starts of attribute names and attribute values. A complete example pair is of the format
+
+
+
+## Evaluation Results
+
+<!--- Describe how your model was evaluated -->
+
+For an automated evaluation of this model, see the *Sentence Embeddings Benchmark*: [https://seb.sbert.net](https://seb.sbert.net?model_name={MODEL_NAME})
+
+
+## Training
+The model was trained with the parameters:
+
+**DataLoader**:
+
+`torch.utils.data.dataloader.DataLoader` of length 108 with parameters:
 ```
-<entry_1> \t <entry_2> \t <label>
+{'batch_size': 64, 'sampler': 'torch.utils.data.sampler.RandomSampler', 'batch_sampler': 'torch.utils.data.sampler.BatchSampler'}
 ```
-where the two entries are serialized and ``<label>`` is either ``0`` (no-match) or ``1`` (match). In our experiments, we evaluated Ditto using two benchmarks:
-* the [ER_Magellan benchmarks](https://github.com/anhaidgroup/deepmatcher/blob/master/Datasets.md) used in the [DeepMatcher paper](http://pages.cs.wisc.edu/~anhai/papers1/deepmatcher-sigmod18.pdf). This benchmark contains 13 datasets of 3 categories: ``Structured``, ``Dirty``, and ``Textual`` representing different dataset characteristics. 
-* the [WDC product matching benchmark](http://webdatacommons.org/largescaleproductcorpus/v2/index.html). This benchmark contains e-commerce product offering pairs from 4 domains: ``cameras``, ``computers``, ``shoes``, and ``watches``. The training data of each domain is also sub-sampled into different sizes, ``small``, ``medium``, ``large``, and ``xlarge`` to test the label efficiency of the models. 
 
-We provide the serialized version of their datasets in ``data/``. The dataset configurations can be found in ``configs.json``. 
+**Loss**:
 
-## Training with Ditto
+`sentence_transformers.losses.SoftmaxLoss.SoftmaxLoss` 
 
-To train the matching model with Ditto:
+Parameters of the fit()-Method:
 ```
-CUDA_VISIBLE_DEVICES=0 python train_ditto.py \
-  --task Structured/Beer \
-  --batch_size 64 \
-  --max_len 64 \
-  --lr 3e-5 \
-  --n_epochs 40 \
-  --lm distilbert \
-  --fp16 \
-  --da del \
-  --dk product \
-  --summarize
+{
+    "epochs": 20,
+    "evaluation_steps": 1000,
+    "evaluator": "sentence_transformers.evaluation.EmbeddingSimilarityEvaluator.EmbeddingSimilarityEvaluator",
+    "max_grad_norm": 1,
+    "optimizer_class": "<class 'transformers.optimization.AdamW'>",
+    "optimizer_params": {
+        "lr": 2e-05
+    },
+    "scheduler": "WarmupLinear",
+    "steps_per_epoch": null,
+    "warmup_steps": 4,
+    "weight_decay": 0.01
+}
 ```
-The meaning of the flags:
-* ``--task``: the name of the tasks (see ``configs.json``)
-* ``--batch_size``, ``--max_len``, ``--lr``, ``--n_epochs``: the batch size, max sequence length, learning rate, and the number of epochs
-* ``--lm``: the language model. We now support ``bert``, ``distilbert``, and ``albert`` (``distilbert`` by default).
-* ``--fp16``: whether train with the half-precision floating point optimization
-* ``--da``, ``--dk``, ``--summarize``: the 3 optimizations of Ditto. See the followings for details.
-* ``--save_model``: if this flag is on, then save the checkpoint to ``{logdir}/{task}/model.pt``.
-
-### Data augmentation (DA)
-
-If the ``--da`` flag is set, then ditto will train the matching model with MixDA, a data augmentation technique for text data. To use data augmentation, one transformation operator needs to be specified. We currently support the following operators for EM:
 
 
-| Operators       | Details                                           |
-|-----------------|---------------------------------------------------|
-|del              | Delete a span of tokens                      |
-|swap             | Shuffle a span of tokens                          |
-|drop_col         | Delete a whole attribute                          |
-|append_col       | Move an attribute (append to the end of another attr) |
-|all              | Apply all the operators uniformly at random    |
-
-### Domain Knowledge (DK)
-
-Inject domain knowledge to the input sequences if the ``--dk`` flag is set. Ditto will preprocess the serialized entries by
-* tagging informative spans (e.g., product ID, persons name) by inserting special tokens (e.g., ID, PERSON)
-* normalizing certain spans (e.g., numbers)
-We currently support two injection modes: ``--dk general`` and ``--dk product`` for the general domain and for the product domain respectively. See ``ditto/knowledge.py`` for more details.
-
-### Summarization
-When the ``--summarize`` flag is set, the input sequence will be summarized by retaining only the high TF-IDF tokens. The resulting sequence will be of length no more than the max sequence length (i.e., ``--max_len``). See ``ditto/summarize.py`` for more details.
-
-## To run the matching models
-Use the command:
+## Full Model Architecture
 ```
-CUDA_VISIBLE_DEVICES=0 python matcher.py \
-  --task wdc_all_small \
-  --input_path input/input_small.jsonl \
-  --output_path output/output_small.jsonl \
-  --lm distilbert \
-  --max_len 64 \
-  --use_gpu \
-  --fp16 \
-  --checkpoint_path checkpoints/
+SentenceTransformer(
+  (0): Transformer({'max_seq_length': 512, 'do_lower_case': False}) with Transformer model: BertModel 
+  (1): Pooling({'word_embedding_dimension': 768, 'pooling_mode_cls_token': False, 'pooling_mode_mean_tokens': True, 'pooling_mode_max_tokens': False, 'pooling_mode_mean_sqrt_len_tokens': False})
+)
 ```
-where ``--task`` is the task name, ``--input_path`` is the input file of the candidate pairs in the jsonlines format, ``--output_path`` is the output path, and ``checkpoint_path`` is the path to the model checkpoint (same as ``--logdir`` when training). The language model ``--lm`` and ``--max_len`` should be set to the same as the one used in training. The same ``--dk`` and ``--summarize`` flags also need to be specified if they are used at the training time.
 
-## Colab notebook
+## Citing & Authors
 
-You can also run training and prediction using this colab [notebook](https://colab.research.google.com/drive/1eyQbockBSxxQ_tuW5F1XKyeVOM1HT_Ro?usp=sharing).
+<!--- Describe where people can find more information -->
