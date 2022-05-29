@@ -154,9 +154,16 @@ def predict(input_path, output_path, config,
         #     return
         scores = softmax(logits, axis=1)
         for row, pred, score in zip(rows, predictions, scores):
-            output = {'left': row[0], 'right': row[1],
-                'match': pred,
-                'match_confidence': score[int(pred)]}
+            if len(row) == 2:
+                output = {'left': row[0], 'right': row[1],
+                    'match': pred,
+                    'match_confidence': score[int(pred)]}
+            else:
+                output = {'left': row[0], 'right': row[1],
+                    'match': pred,
+                    'match_confidence': score[int(pred)],
+                    'right_id': row[3],
+                    'left_id': row[4]}
             writer.write(output)
 
     # input_path can also be train/valid/test.txt
@@ -169,6 +176,7 @@ def predict(input_path, output_path, config,
 
     # batch processing
     start_time = time.time()
+    # print(input_path)
     with jsonlines.open(input_path) as reader,\
          jsonlines.open(output_path, mode='w') as writer:
         pairs = []
@@ -176,6 +184,7 @@ def predict(input_path, output_path, config,
         for idx, row in tqdm(enumerate(reader)):
             pairs.append(to_str(row[0], row[1], summarizer, max_len, dk_injector))
             rows.append(row)
+            
             if len(pairs) == batch_size:
                 process_batch(rows, pairs, writer)
                 pairs.clear()
@@ -298,7 +307,7 @@ def load_model(task, path, lm, use_gpu, fp16=True):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", type=str, default='Structured/Beer')
-    parser.add_argument("--input_path", type=str, default='input/candidates_small.jsonl')
+    parser.add_argument("--input_path", type=str, default='input/candidates.jsonl')
     parser.add_argument("--output_path", type=str, default='output/matched_small.jsonl')
     parser.add_argument("--lm", type=str, default='distilbert')
     parser.add_argument("--use_gpu", dest="use_gpu", action="store_true")
