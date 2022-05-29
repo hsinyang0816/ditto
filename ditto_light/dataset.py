@@ -37,7 +37,11 @@ class DittoDataset(data.Dataset):
             lines = open(path)
 
         for line in lines:
-            s1, s2, label = line.strip().split('\t')
+            # print(line)
+            try:
+                s1, s2, label = line.strip().split('\t')
+            except:
+                print('Warning: There is a dirty data')
             self.pairs.append((s1, s2))
             self.labels.append(int(label))
 
