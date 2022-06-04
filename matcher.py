@@ -154,18 +154,17 @@ def predict(input_path, output_path, config,
         #     return
         scores = softmax(logits, axis=1)
         for row, pred, score in zip(rows, predictions, scores):
-            if pred:
-                if len(row) == 2:
-                    output = {'left': row[0], 'right': row[1],
-                        'match': pred,
-                        'match_confidence': score[int(pred)]}
-                else:
-                    output = {'left': row[0], 'right': row[1],
-                        'match': pred,
-                        'match_confidence': score[int(pred)],
-                        'left_id': row[3],
-                        'fight_id': row[4]}
-                writer.write(output)
+            if len(row) == 2:
+                output = {'left': row[0], 'right': row[1],
+                    'match': pred,
+                    'match_confidence': score[int(pred)]}
+            else:
+                output = {'left': row[0], 'right': row[1],
+                    'match': pred,
+                    'match_confidence': score[int(pred)],
+                    'left_id': row[3],
+                    'fight_id': row[4]}
+            writer.write(output)
 
     # input_path can also be train/valid/test.txt
     # convert to jsonlines
