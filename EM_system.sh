@@ -1,7 +1,7 @@
 # Download resource
-[ -f blocker_model.zip ] && echo "Model exists" || wget -O blocker_model/pytorch_model.bin 'https://www.dropbox.com/s/7k6mk1cc2fixn7c/blocker_model.zip?dl=1'
+[ -f blocker_model.zip ] && echo "Model exists" || wget -O blocker_model.zip 'https://www.dropbox.com/s/7k6mk1cc2fixn7c/blocker_model.zip?dl=1'
 [ -f checkpoints/Dirty/DBLP-ACM/model.pt ] && echo "Model exists" || wget -O checkpoints/Dirty/DBLP-ACM/model.pt 'https://www.dropbox.com/s/8jasdygnuuqcslj/model.pt?dl=1'
-unzip -f blocker_model.zip;
+unzip blocker_model.zip;
 # Transform csv to txt
 python3 blocking/csv2txt.py --csv $1 --txt blocking/input/table_A.txt;
 python3 blocking/csv2txt.py --csv $2 --txt blocking/input/table_B.txt;
