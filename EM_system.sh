@@ -12,3 +12,4 @@ CUDA_VISIBLE_DEVICES=0 python3 blocking/blocker.py --input_path blocking/input/ 
 echo "-----------------------------------------------------  Start Matching  -----------------------------------------------------"
 CUDA_VISIBLE_DEVICES=0 python3 matcher.py --task Dirty/DBLP-ACM --input_path input/candidates.jsonl --output_path $3 --lm roberta --max_len 128 --use_gpu --checkpoint_path checkpoints --fp16;
 echo "-----------------------------------------------------      Finish!     -----------------------------------------------------"
+echo "Save matching results to $3!"
