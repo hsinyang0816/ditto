@@ -37,7 +37,7 @@ class DittoModel(nn.Module):
         self.self_supervised_fc = nn.Sequential(
             torch.nn.Linear(hidden_size, hidden_size//2),
             nn.PReLU(),
-            torch.nn.Linear(hidden_size//2, 6)
+            torch.nn.Linear(hidden_size//2, 8)
         )
 
 
