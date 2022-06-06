@@ -7,11 +7,18 @@ import jsonlines
 
 # ---------- Arugment Setup ----------
 # Input jsonline file
-filePath = "output.jsonl"
+filePath = "output/output.jsonl"
 # Database Account
+''' Online '''
+hostname = "192.168.0.10"
+username = "guest"
+db_root_password = "sqlfinalproject"
+
+''' Local
 hostname = "localhost"
 username = "root"
-db_root_password = "Cc5331751501"
+db_root_password = "123456"
+'''
 # Database Name
 database_ori_left = "left_DB"
 database_ori_right = "right_DB"
