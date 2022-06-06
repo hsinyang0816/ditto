@@ -18,8 +18,8 @@ username = "root"
 db_root_password = "123456"
 '''
 # Input Data File Path
-filePath_tableA = "D:/ProgrammingCode/DBMS/final_project/tableA.csv"
-filePath_tableB = "D:/ProgrammingCode/DBMS/final_project/tableB.csv"
+filePath_tableA = "blocking/input/tableA.csv"
+filePath_tableB = "blocking/input/tableB.csv"
 # -----------------------------------
 
 def createDatabase():
