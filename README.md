@@ -89,6 +89,7 @@ where ``--task`` is the task name, ``--input_path`` is the input file of the can
 
 ## Colab notebook
 
-1. You can also run training(blocker and matcher) and prediction using this colab [notebook]: https://colab.research.google.com/drive/1VM9RtpJz7_D--HEMeqmywCmjdDVwuQcN?usp=sharing).
+1. You can also run training(blocker and matcher) and prediction using this colab [notebook]: https://colab.research.google.com/drive/1VM9RtpJz7_D--HEMeqmywCmjdDVwuQcN?usp=sharing
 2. End-to-end colab [notebook] version: https://colab.research.google.com/drive/1gkjFQbgFafryGWIklPBy0TjWykQorm8b?usp=sharing
+
 Here have two file DITTO_combine.py and create_database.py. "create_database.py" is use to create a database in MySQL DBMS by two table(csv file). After the model output the EM prediction results, "DITTO_combine.py" will utilize the jsonl file and integral two database together in MySQL 
