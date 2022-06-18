@@ -31,7 +31,7 @@ python3 -m spacy download en_core_web_lg
 ## The EM pipeline
 
 A typical EM pipeline consists of two phases: blocking and matching. 
-![The EM pipeline of Ditto.](ditto.jpg)
+![The EM pipeline of Ditto.](system.png)
 The blocking phase typically consists of simple heuristics that reduce the number of candidate pairs to perform the pairwise comparisons. Ditto optimizes the matching phase which performs the actual pairwise comparisons. The input to Ditto consists of a set of labeled candidate data entry pairs. Each data entry is pre-serialized into the following format:
 ```
 COL title VAL microsoft visio standard 2007 version upgrade COL manufacturer VAL microsoft COL price VAL 129.95
