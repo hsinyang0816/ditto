@@ -1,10 +1,8 @@
-# Ditto: Deep Entity Matching with Pre-Trained Language Models
+# Deep Entity Matching System with Self-supervised Pre-Trained Language model
 
 *Update: a new light-weight version based on new versions of Transformers*
 
-Ditto is an entity matching (EM) solution based on pre-trained language models such as BERT. Given a pair of data entries, EM checks if the two entries refer to the same real-world entities (products, businesses, publications, persons, etc.). Ditto leverages the powerful language understanding capability of pre-trained language models (LMs) via fine-tuning. Ditto serializes each data entry into a text sequence and casts EM as a sequence-pair classification problem solvable by LM fine-tuning. We also employ a set of novel optimizations including summarization, injecting domain-specific knowledge, and data augmentation to further boost the performance of the matching models.
-
-For more technical details, see the [Deep Entity Matching with Pre-Trained Language Models](https://arxiv.org/abs/2004.00584) paper.
+Entity Matching (EM) refers to the problem of determining whether two data entries refer to the same real-world entity. The objective is to determine the set of pairs of data entries, one entry from each table so that each pair of entries refer to the same real world object. To this end, we propose a Deep Entity Matching System with Self-supervised Pre-trained Language model, which is a complete EM system combine DITTO with self-supervised learning into MySQL database management system(DBMS). Attribute to self-supervised learning(SSL) we adapted, our system is forced to learn “harder” to improve the model’s matching capability. Some dark knowledge and discriminative representations are also acquired from the learning process. Comprehensive experiments on different real-world large-scale EM benchmarks clearly demonstrate the superiority of our approach. Finally, we also cleverly integrate Blocker, Matcher and DBMS these three separate components together and provide user a convenient end-to-end EM solution.
 
 ## Requirements
 
@@ -16,9 +14,18 @@ For more technical details, see the [Deep Entity Matching with Pre-Trained Langu
 
 Install required packages
 ```
-conda install -c conda-forge nvidia-apex
+# install requirements
 pip install -r requirements.txt
-python -m spacy download en_core_web_lg
+conda install -c conda-forge nvidia-apex
+
+# some issue with colab
+pip3 install --upgrade "urllib3==1.25.4" awscli
+pip3 install transformers
+pip3 install sentence_transformers
+pip3 install jsonlines
+pip3 install tensorboardX
+pip3 install -U spacy
+python3 -m spacy download en_core_web_lg
 ```
 
 ## The EM pipeline
@@ -39,22 +46,24 @@ where the two entries are serialized and ``<label>`` is either ``0`` (no-match) 
 
 We provide the serialized version of their datasets in ``data/``. The dataset configurations can be found in ``configs.json``. 
 
-## Training with Ditto
+## Training with SSL_Ditto
 
-To train the matching model with Ditto:
+To train the matching model with SSL_Ditto:
 ```
-CUDA_VISIBLE_DEVICES=0 python train_ditto.py \
-  --task Structured/Beer \
+!CUDA_VISIBLE_DEVICES=0 python3 train_ditto.py \
+  --task Structured/Walmart-Amazon \
   --batch_size 64 \
-  --max_len 64 \
+  --max_len 128 \
   --lr 3e-5 \
-  --n_epochs 40 \
-  --lm distilbert \
+  --n_epochs 30 \
+  --finetuning \
+  --lm roberta \
   --fp16 \
-  --da del \
+  --da all \
   --dk product \
-  --summarize
+  --save_model
 ```
+
 The meaning of the flags:
 * ``--task``: the name of the tasks (see ``configs.json``)
 * ``--batch_size``, ``--max_len``, ``--lr``, ``--n_epochs``: the batch size, max sequence length, learning rate, and the number of epochs
@@ -63,38 +72,15 @@ The meaning of the flags:
 * ``--da``, ``--dk``, ``--summarize``: the 3 optimizations of Ditto. See the followings for details.
 * ``--save_model``: if this flag is on, then save the checkpoint to ``{logdir}/{task}/model.pt``.
 
-### Data augmentation (DA)
-
-If the ``--da`` flag is set, then ditto will train the matching model with MixDA, a data augmentation technique for text data. To use data augmentation, one transformation operator needs to be specified. We currently support the following operators for EM:
-
-
-| Operators       | Details                                           |
-|-----------------|---------------------------------------------------|
-|del              | Delete a span of tokens                      |
-|swap             | Shuffle a span of tokens                          |
-|drop_col         | Delete a whole attribute                          |
-|append_col       | Move an attribute (append to the end of another attr) |
-|all              | Apply all the operators uniformly at random    |
-
-### Domain Knowledge (DK)
-
-Inject domain knowledge to the input sequences if the ``--dk`` flag is set. Ditto will preprocess the serialized entries by
-* tagging informative spans (e.g., product ID, persons name) by inserting special tokens (e.g., ID, PERSON)
-* normalizing certain spans (e.g., numbers)
-We currently support two injection modes: ``--dk general`` and ``--dk product`` for the general domain and for the product domain respectively. See ``ditto/knowledge.py`` for more details.
-
-### Summarization
-When the ``--summarize`` flag is set, the input sequence will be summarized by retaining only the high TF-IDF tokens. The resulting sequence will be of length no more than the max sequence length (i.e., ``--max_len``). See ``ditto/summarize.py`` for more details.
-
 ## To run the matching models
 Use the command:
 ```
-CUDA_VISIBLE_DEVICES=0 python matcher.py \
-  --task wdc_all_small \
-  --input_path input/input_small.jsonl \
-  --output_path output/output_small.jsonl \
-  --lm distilbert \
-  --max_len 64 \
+!CUDA_VISIBLE_DEVICES=0 python3 matcher.py \
+  --task Dirty/DBLP-ACM \
+  --input_path input/candidates.jsonl \
+  --output_path output/output.jsonl \
+  --lm roberta \
+  --max_len 128 \
   --use_gpu \
   --fp16 \
   --checkpoint_path checkpoints/
@@ -103,4 +89,6 @@ where ``--task`` is the task name, ``--input_path`` is the input file of the can
 
 ## Colab notebook
 
-You can also run training and prediction using this colab [notebook](https://colab.research.google.com/drive/1eyQbockBSxxQ_tuW5F1XKyeVOM1HT_Ro?usp=sharing).
+1. You can also run training(blocker and matcher) and prediction using this colab [notebook]: https://colab.research.google.com/drive/1VM9RtpJz7_D--HEMeqmywCmjdDVwuQcN?usp=sharing).
+2. End-to-end colab [notebook] version: https://colab.research.google.com/drive/1gkjFQbgFafryGWIklPBy0TjWykQorm8b?usp=sharing
+Here have two file DITTO_combine.py and create_database.py. "create_database.py" is use to create a database in MySQL DBMS by two table(csv file). After the model output the EM prediction results, "DITTO_combine.py" will utilize the jsonl file and integral two database together in MySQL 
