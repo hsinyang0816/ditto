@@ -1,7 +1,5 @@
 # Deep Entity Matching System with Self-supervised Pre-Trained Language model
 
-*Update: a new light-weight version based on new versions of Transformers*
-
 Entity Matching (EM) refers to the problem of determining whether two data entries refer to the same real-world entity. The objective is to determine the set of pairs of data entries, one entry from each table so that each pair of entries refer to the same real world object. To this end, we propose a Deep Entity Matching System with Self-supervised Pre-trained Language model, which is a complete EM system combine DITTO with self-supervised learning into MySQL database management system(DBMS). Attribute to self-supervised learning(SSL) we adapted, our system is forced to learn “harder” to improve the model’s matching capability. Some dark knowledge and discriminative representations are also acquired from the learning process. Comprehensive experiments on different real-world large-scale EM benchmarks clearly demonstrate the superiority of our approach. Finally, we also cleverly integrate Blocker, Matcher and DBMS these three separate components together and provide user a convenient end-to-end EM solution.
 
 ## Requirements
@@ -31,7 +29,9 @@ python3 -m spacy download en_core_web_lg
 ## The EM pipeline
 
 A typical EM pipeline consists of two phases: blocking and matching. 
+
 ![The EM pipeline of Ditto.](system.png)
+
 The blocking phase typically consists of simple heuristics that reduce the number of candidate pairs to perform the pairwise comparisons. Ditto optimizes the matching phase which performs the actual pairwise comparisons. The input to Ditto consists of a set of labeled candidate data entry pairs. Each data entry is pre-serialized into the following format:
 ```
 COL title VAL microsoft visio standard 2007 version upgrade COL manufacturer VAL microsoft COL price VAL 129.95
